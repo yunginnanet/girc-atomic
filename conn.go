@@ -43,7 +43,6 @@ type ircConn struct {
 	// lastPong is the last successful time that we pinged the server and
 	// received a successful pong back.
 	lastPong atomic.Value
-	// pingDelay time.Duration
 }
 
 // Dialer is an interface implementation of net.Dialer. Use this if you would
@@ -275,7 +274,6 @@ func (c *Client) MockConnect(conn net.Conn) error {
 
 func (c *Client) internalConnect(mock net.Conn, dialer Dialer) error {
 startConn:
-
 	if c.conn != nil {
 		panic("use of connect more than once")
 	}
@@ -614,13 +612,18 @@ func (c *Client) pingLoop(ctx context.Context, errs chan error, working *int32) 
 			if time.Since(c.conn.lastPong.Load().(time.Time)) > c.Config.PingDelay+(120*time.Second) {
 				// It's 60 seconds over what out ping delay is, connection
 				// has probably dropped.
-				errs <- ErrTimedOut{
+
+				err := ErrTimedOut{
 					TimeSinceSuccess: time.Since(c.conn.lastPong.Load().(time.Time)),
 					LastPong:         c.conn.lastPong.Load().(time.Time),
 					LastPing:         c.conn.lastPing.Load().(time.Time),
 					Delay:            c.Config.PingDelay,
 				}
 
+				go func() {
+					errs <- err
+				}()
+				wg.Done()
 				return
 			}
 

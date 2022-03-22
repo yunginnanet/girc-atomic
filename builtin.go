@@ -576,6 +576,7 @@ func handleNAMES(c *Client, e Event) {
 
 	var modes, nick string
 	var ok bool
+	var s *Source
 
 	for i := 0; i < len(parts); i++ {
 		modes, nick, ok = parseUserPrefix(parts[i])

@@ -12,10 +12,10 @@
 [Click here to see the changes in girc-atomic vs girc](https://github.com/lrstanley/girc/compare/master...yunginnanet:master)
 
 ## Status
-  
-### ₜₕₑ ₛₖy ᵢₛ 𝆑ₐₗₗᵢₙg ʇɥǝ sʞʎ ᴉs ⅎɐʅʅᴉuƃ 
+
+### ₜₕₑ ₛₖy ᵢₛ 𝆑ₐₗₗᵢₙg ʇɥǝ sʞʎ ᴉs ⅎɐʅʅᴉuƃ
 ### 𝚝𝚑𝚎𝚢 𝚜𝚑𝚘𝚞𝚕𝚍 𝚑𝚊𝚟𝚎 𝚕𝚒𝚜𝚝𝚎𝚗𝚎𝚍
-### ʇɥǝ sʞʎ ᴉs ⅎɐʅʅᴉuƃ ₜₕₑ ₛₖy ᵢₛ 𝆑ₐₗₗᵢₙg  
+### ʇɥǝ sʞʎ ᴉs ⅎɐʅʅᴉuƃ ₜₕₑ ₛₖy ᵢₛ 𝆑ₐₗₗᵢₙg 
 
 ## Features
 
@@ -24,23 +24,23 @@
 - Event based triggering/responses ([example](https://godoc.org/github.com/yunginnanet/girc-atomic#ex-package--Commands), and [CTCP too](https://godoc.org/github.com/yunginnanet/girc-atomic#Commands.SendCTCP)!)
 - [Documentation](https://godoc.org/github.com/yunginnanet/girc-atomic) is _mostly_ complete.
 - Support for almost all of the [IRCv3 spec](http://ircv3.net/software/libraries.html).
-  - SASL Auth (currently only `PLAIN` and `EXTERNAL` is support by default,
+- SASL Auth (currently only `PLAIN` and `EXTERNAL` is support by default,
   however you can simply implement `SASLMech` yourself to support additional
   mechanisms.)
-  - Message tags (things like `account-tag` on by default)
-  - `account-notify`, `away-notify`, `chghost`, `extended-join`, etc -- all handled seemlessly ([cap.go](https://github.com/yunginnanet/girc-atomic/blob/master/cap.go) for more info).
+- Message tags (things like `account-tag` on by default)
+- `account-notify`, `away-notify`, `chghost`, `extended-join`, etc -- all handled seemlessly ([cap.go](https://github.com/yunginnanet/girc-atomic/blob/master/cap.go) for more info).
 - Channel and user tracking. Easily find what users are in a channel, if a
   user is away, or if they are authenticated (if the server supports it!)
 - Client state/capability tracking. Easy methods to access capability data ([LookupChannel](https://godoc.org/github.com/yunginnanet/girc-atomic#Client.LookupChannel), [LookupUser](https://godoc.org/github.com/yunginnanet/girc-atomic#Client.LookupUser), [GetServerOpt (ISUPPORT)](https://godoc.org/github.com/yunginnanet/girc-atomic#Client.GetServerOpt), etc.)
 - Built-in support for things you would commonly have to implement yourself.
-  - Nick collision detection and prevention (also see [Config.HandleNickCollide](https://godoc.org/github.com/yunginnanet/girc-atomic#Config).)
-  - Event/message rate limiting.
-  - Channel, nick, and user validation methods ([IsValidChannel](https://godoc.org/github.com/yunginnanet/girc-atomic#IsValidChannel), [IsValidNick](https://godoc.org/github.com/yunginnanet/girc-atomic#IsValidNick), etc.)
-  - CTCP handling and auto-responses ([CTCP](https://godoc.org/github.com/yunginnanet/girc-atomic#CTCP))
-  - Utilizes the atomic/value package from stdlib to reduce backpressure in multi-client usage.
-  - Additional CTCP handlers and customization.
-  - ??????
-  - PROFIT!!!1!
+- Nick collision detection and prevention (also see [Config.HandleNickCollide](https://godoc.org/github.com/yunginnanet/girc-atomic#Config).)
+- Event/message rate limiting.
+- Channel, nick, and user validation methods ([IsValidChannel](https://godoc.org/github.com/yunginnanet/girc-atomic#IsValidChannel), [IsValidNick](https://godoc.org/github.com/yunginnanet/girc-atomic#IsValidNick), etc.)
+- CTCP handling and auto-responses ([CTCP](https://godoc.org/github.com/yunginnanet/girc-atomic#CTCP))
+- Utilizes the atomic/value package from stdlib to reduce backpressure in multi-client usage.
+- Additional CTCP handlers and customization.
+- ??????
+- PROFIT!!!1!
 
 ## Examples
 
@@ -59,8 +59,8 @@ Working on a project and want to add it to the list? Submit a pull request!
 ## Contributing
 
 ~~Please review the [CONTRIBUTING](CONTRIBUTING.md) doc for submitting issues/a guide
-on submitting pull requests and helping out.~~  
-  
+on submitting pull requests and helping out.~~
+
 **OH GOD PLEASE MAKE IT STOP**
 
 
