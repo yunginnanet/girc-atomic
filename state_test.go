@@ -75,14 +75,18 @@ func TestState(t *testing.T) {
 			return
 		}
 
-		if network := c.NetworkName(); network != "DummyIRC" && network != "DUMMY" {
+		network := c.NetworkName()
+
+		if network != "DummyIRC" && network != "DUMMY" {
 			t.Errorf("User.Network == %q, want \"DummyIRC\" or \"DUMMY\"", network)
 			return
 		}
 
 		t.Logf("successfully tested network name: %s", network)
 
-		if caseExample, ok := c.GetServerOpt("NICKLEN"); !ok || caseExample != "20" {
+		caseExample, ok := c.GetServerOpt("NICKLEN")
+
+		if !ok || caseExample != "20" {
 			t.Errorf("Client.GetServerOptions returned invalid ISUPPORT variable: %q", caseExample)
 		}
 

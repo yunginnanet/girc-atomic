@@ -847,7 +847,9 @@ func (c *Client) debugLogEvent(e *Event, dropped bool) {
 	}
 
 	if c.Config.Out != nil {
+
 		if pretty, ok := e.Pretty(); ok {
+
 			fmt.Fprintln(c.Config.Out, StripRaw(pretty))
 		}
 	}
