@@ -78,16 +78,15 @@ func TestState(t *testing.T) {
 		if network := c.NetworkName(); network != "DummyIRC" && network != "DUMMY" {
 			t.Errorf("User.Network == %q, want \"DummyIRC\" or \"DUMMY\"", network)
 			return
-		} else {
-			t.Logf("successfully tested network name: %s", network)
 		}
+
+		t.Logf("successfully tested network name: %s", network)
 
 		if caseExample, ok := c.GetServerOpt("NICKLEN"); !ok || caseExample != "20" {
 			t.Errorf("Client.GetServerOptions returned invalid ISUPPORT variable: %q", caseExample)
-			return
-		} else {
-			t.Logf("successfully serveroption NICKLEN: %s", caseExample)
 		}
+
+		t.Logf("successfully serveroption NICKLEN: %s", caseExample)
 
 		users := c.UserList()
 		channels := c.ChannelList()
@@ -96,26 +95,26 @@ func TestState(t *testing.T) {
 			// This could fail too, if sorting isn't occurring.
 			t.Errorf("got state users %#v, wanted: %#v", users, []string{"fhjones", "nick2"})
 			return
-		} else {
-			t.Logf("successfully checked userlist: %v", users)
 		}
+
+		t.Logf("successfully checked userlist: %v", users)
 
 		if !reflect.DeepEqual(channels, []string{"#channel", "#channel2"}) {
 			// This could fail too, if sorting isn't occurring.
 			t.Errorf("got state channels %#v, wanted: %#v", channels, []string{"#channel", "#channel2"})
 			return
-		} else {
-			t.Logf("successfully checked channel list: %v", channels)
 		}
+
+		t.Logf("successfully checked channel list: %v", channels)
 
 		fullChannels := c.Channels()
 		for i := 0; i < len(fullChannels); i++ {
 			if fullChannels[i].Name != channels[i] {
 				t.Errorf("fullChannels name doesn't map to same name in ChannelsList: %q :: %#v", fullChannels[i].Name, channels)
 				return
-			} else {
-				t.Logf("successfully checked full channel list: %s: %v", fullChannels[i].Name, channels)
 			}
+
+			t.Logf("successfully checked full channel list: %s: %v", fullChannels[i].Name, channels)
 		}
 
 		fullUsers := c.Users()
