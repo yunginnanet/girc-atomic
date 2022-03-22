@@ -623,7 +623,6 @@ func (c *Client) pingLoop(ctx context.Context, errs chan error, working *int32) 
 				go func() {
 					errs <- err
 				}()
-				wg.Done()
 				return
 			}
 

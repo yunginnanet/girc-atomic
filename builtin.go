@@ -584,8 +584,6 @@ func handleNAMES(c *Client, e Event) {
 			continue
 		}
 
-		var s = new(Source)
-
 		// If userhost-in-names.
 		if strings.Contains(nick, "@") {
 			s = ParseSource(nick)
