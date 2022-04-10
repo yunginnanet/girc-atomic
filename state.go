@@ -143,9 +143,7 @@ type User struct {
 	} `json:"extras"`
 }
 
-// Channels returns a reference of *Channels that the client knows the user
-// is in. If you're just looking for the namme of the channels, use
-// User.ChannelList.
+// Channels returns a slice of pointers to Channel types that the client knows the user is in.
 func (u User) Channels(c *Client) []*Channel {
 	if c == nil {
 		panic("nil Client provided")
