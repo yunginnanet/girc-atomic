@@ -105,7 +105,7 @@ func (nest *nestedHandlers) lenFor(cmd string) (total int) {
 		return 0
 	}
 	hndlrs := hs.(cmap.ConcurrentMap)
-	return len(hndlrs.Keys())
+	return hndlrs.Count()
 }
 
 func (nest *nestedHandlers) getAllHandlersFor(s string) (handlers chan handlerTuple, ok bool) {
