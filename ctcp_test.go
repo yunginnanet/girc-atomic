@@ -9,26 +9,40 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+	"unicode/utf8"
 )
 
+var testsEncodeCTCP = []struct {
+	name string
+	test *CTCPEvent
+	want string
+}{
+	{name: "command only", test: &CTCPEvent{Command: "TEST", Text: ""}, want: "\001TEST\001"},
+	{name: "command with args", test: &CTCPEvent{Command: "TEST", Text: "TEST"}, want: "\001TEST TEST\001"},
+	{name: "nil command", test: &CTCPEvent{Command: "", Text: "TEST"}, want: ""},
+	{name: "nil event", test: nil, want: ""},
+}
+
+func FuzzEncodeCTCP(f *testing.F) {
+	for _, tc := range testsEncodeCTCP {
+		if tc.test == nil {
+			continue
+		}
+		f.Add(tc.test.Command, tc.test.Text)
+	}
+
+	f.Fuzz(func(t *testing.T, cmd, text string) {
+		got := EncodeCTCP(&CTCPEvent{Command: cmd, Text: text})
+
+		if utf8.ValidString(cmd) && utf8.ValidString(text) && !utf8.ValidString(got) {
+			t.Errorf("produced invalid UTF-8 string %q", got)
+		}
+	})
+}
+
 func TestEncodeCTCP(t *testing.T) {
-	type args struct {
-		ctcp *CTCPEvent
-	}
-
-	tests := []struct {
-		name string
-		args args
-		want string
-	}{
-		{name: "command only", args: args{ctcp: &CTCPEvent{Command: "TEST", Text: ""}}, want: "\001TEST\001"},
-		{name: "command with args", args: args{ctcp: &CTCPEvent{Command: "TEST", Text: "TEST"}}, want: "\001TEST TEST\001"},
-		{name: "nil command", args: args{ctcp: &CTCPEvent{Command: "", Text: "TEST"}}, want: ""},
-		{name: "nil event", args: args{ctcp: nil}, want: ""},
-	}
-
-	for _, tt := range tests {
-		if got := EncodeCTCP(tt.args.ctcp); got != tt.want {
+	for _, tt := range testsEncodeCTCP {
+		if got := EncodeCTCP(tt.test); got != tt.want {
 			t.Errorf("%s: encodeCTCP() = %q, want %q", tt.name, got, tt.want)
 		}
 	}
@@ -110,7 +124,8 @@ func TestCall(t *testing.T) {
 		atomic.AddUint64(&counter, 1)
 	})
 
-	if ctcp.call(New(Config{}), &CTCPEvent{Command: "TEST"}); atomic.LoadUint64(&counter) != 1 {
+	ctcp.call(New(Config{}), &CTCPEvent{Command: "TEST"})
+	if atomic.LoadUint64(&counter) != 1 {
 		t.Fatal("regular execution: call() didn't increase counter")
 	}
 	ctcp.Clear("TEST")
@@ -120,7 +135,8 @@ func TestCall(t *testing.T) {
 	})
 
 	ctcp.call(New(Config{}), &CTCPEvent{Command: "TEST"})
-	if time.Sleep(250 * time.Millisecond); atomic.LoadUint64(&counter) != 2 {
+	time.Sleep(250 * time.Millisecond)
+	if atomic.LoadUint64(&counter) != 2 {
 		t.Fatal("goroutine execution: call() in goroutine didn't increase counter")
 	}
 	ctcp.Clear("TEST")
@@ -129,14 +145,15 @@ func TestCall(t *testing.T) {
 		atomic.AddUint64(&counter, 1)
 	})
 
-	if ctcp.call(New(Config{}), &CTCPEvent{Command: "TEST"}); atomic.LoadUint64(&counter) != 3 {
+	ctcp.call(New(Config{}), &CTCPEvent{Command: "TEST"})
+	if atomic.LoadUint64(&counter) != 3 {
 		t.Fatal("wildcard execution: call() didn't increase counter")
 	}
 	ctcp.Clear("*")
-
 	ctcp.Clear("TEST")
 
-	if ctcp.call(New(Config{}), &CTCPEvent{Command: "TEST"}); atomic.LoadUint64(&counter) != 3 {
+	ctcp.call(New(Config{}), &CTCPEvent{Command: "TEST"})
+	if atomic.LoadUint64(&counter) != 3 {
 		t.Fatal("empty execution: call() with no handler incremented the counter")
 	}
 }

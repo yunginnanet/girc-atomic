@@ -36,7 +36,7 @@ func (cmd *Commands) Join(channels ...string) {
 			continue
 		}
 
-		if len(buffer) == 0 {
+		if buffer == "" {
 			buffer = channels[i]
 		} else {
 			buffer += "," + channels[i]
@@ -366,7 +366,7 @@ func (cmd *Commands) List(channels ...string) {
 			continue
 		}
 
-		if len(buffer) == 0 {
+		if buffer == "" {
 			buffer = channels[i]
 		} else {
 			buffer += "," + channels[i]

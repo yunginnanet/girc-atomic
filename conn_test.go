@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-func mockBuffers() (in *bytes.Buffer, out *bytes.Buffer, irc *ircConn) {
+func mockBuffers() (in, out *bytes.Buffer, irc *ircConn) {
 	in = &bytes.Buffer{}
 	out = &bytes.Buffer{}
 	irc = &ircConn{
@@ -88,7 +88,7 @@ func TestRate(t *testing.T) {
 	}
 }
 
-func genMockConn() (client *Client, clientConn net.Conn, serverConn net.Conn) {
+func genMockConn() (client *Client, clientConn, serverConn net.Conn) {
 	client = New(Config{
 		Server: "dummy.int",
 		Port:   6667,
@@ -107,7 +107,7 @@ func mockReadBuffer(conn net.Conn) {
 	// Accept all outgoing writes from the client.
 	b := bufio.NewReader(conn)
 	for {
-		conn.SetReadDeadline(time.Now().Add(10 * time.Second))
+		_ = conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 		_, err := b.ReadString(byte('\n'))
 		if err != nil {
 			return

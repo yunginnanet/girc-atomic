@@ -167,18 +167,6 @@ func (c *ircConn) decode() (event *Event, err error) {
 	return event, nil
 }
 
-/*
-func (c *ircConn) encode(event *Event) error {
-	if _, err := c.io.Write(event.Bytes()); err != nil {
-		return err
-	}
-	if _, err := c.io.Write(endline); err != nil {
-		return err
-	}
-
-	return c.io.Flush()
-}
-*/
 func (c *ircConn) newReadWriter() {
 	c.io = bufio.NewReadWriter(bufio.NewReader(c.sock), bufio.NewWriter(c.sock))
 }
@@ -609,9 +597,8 @@ func (c *Client) pingLoop(ctx context.Context, errs chan error, working *int32) 
 				past = true
 			}
 
-			if time.Since(c.conn.lastPong.Load().(time.Time)) > c.Config.PingDelay+(120*time.Second) {
-				// It's 60 seconds over what out ping delay is, connection
-				// has probably dropped.
+			if time.Since(c.conn.lastPong.Load().(time.Time)) > c.Config.PingDelay+(180*time.Second) {
+				// It's 180 seconds over what out ping delay is, connection has probably dropped.
 
 				err := ErrTimedOut{
 					TimeSinceSuccess: time.Since(c.conn.lastPong.Load().(time.Time)),

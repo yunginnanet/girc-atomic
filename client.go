@@ -11,7 +11,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net"
 	"os"
@@ -275,10 +274,10 @@ func (conf *Config) isValid() error {
 	}
 
 	if !IsValidNick(conf.Nick) {
-		return &ErrInvalidConfig{Conf: *conf, err: errors.New("bad nickname specified: " + conf.Nick)}
+		return &ErrInvalidConfig{Conf: *conf, err: fmt.Errorf("bad nickname specified: %s", conf.Nick)}
 	}
 	if !IsValidUser(conf.User) {
-		return &ErrInvalidConfig{Conf: *conf, err: errors.New("bad user/ident specified: " + conf.User)}
+		return &ErrInvalidConfig{Conf: *conf, err: fmt.Errorf("bad user/ident specified: %s", conf.Nick)}
 	}
 
 	return nil
@@ -320,7 +319,7 @@ func New(config Config) *Client {
 		if envDebug {
 			c.debug = log.New(os.Stderr, "debug:", log.Ltime|log.Lshortfile)
 		} else {
-			c.debug = log.New(ioutil.Discard, "", 0)
+			c.debug = log.New(io.Discard, "", 0)
 		}
 	} else {
 		if envDebug {
@@ -850,7 +849,7 @@ func (c *Client) debugLogEvent(e *Event, dropped bool) {
 
 		if pretty, ok := e.Pretty(); ok {
 
-			fmt.Fprintln(c.Config.Out, StripRaw(pretty))
+			_, _ = fmt.Fprintln(c.Config.Out, StripRaw(pretty))
 		}
 	}
 }
