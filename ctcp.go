@@ -5,7 +5,6 @@
 package girc
 
 import (
-	"fmt"
 	"runtime"
 	"strings"
 	"sync"
@@ -151,10 +150,6 @@ func (c *CTCP) call(client *Client, event *CTCPEvent) {
 			return
 		}
 
-		// Send a ERRMSG reply, if we know who sent it.
-		if event.Source != nil && IsValidNick(event.Source.ID()) {
-			client.Cmd.SendCTCPReply(event.Source.ID(), CTCP_ERRMSG, "that is an unknown CTCP query")
-		}
 		return
 	}
 
@@ -310,8 +305,7 @@ func handleCTCPFinger(client *Client, ctcp CTCPEvent) {
 		client.Cmd.SendCTCPReply(ctcp.Source.ID(), CTCP_FINGER, client.Config.Finger)
 		return
 	}
-
-	active := client.conn.lastActive.Load().(time.Time)
-	client.Cmd.SendCTCPReply(ctcp.Source.ID(), CTCP_FINGER, fmt.Sprintf("%s -- idle %s", client.Config.Name, time.Since(active)))
-
+	// irssi doesn't appear to do this on a stock install so gonna just go ahead and nix it.
+	//	active := client.conn.lastActive.Load().(time.Time)
+	//	client.Cmd.SendCTCPReply(ctcp.Source.ID(), CTCP_FINGER, fmt.Sprintf("%s -- idle %s", client.Config.Name, time.Since(active)))
 }

@@ -583,6 +583,7 @@ func (c *Client) pingLoop(ctx context.Context, errs chan error, working *int32) 
 
 	started := time.Now()
 	past := false
+	pingSent := false
 
 	for {
 		select {
@@ -597,7 +598,7 @@ func (c *Client) pingLoop(ctx context.Context, errs chan error, working *int32) 
 				past = true
 			}
 
-			if time.Since(c.conn.lastPong.Load().(time.Time)) > c.Config.PingDelay+(180*time.Second) {
+			if pingSent && time.Since(c.conn.lastPong.Load().(time.Time)) > c.Config.PingDelay+(180*time.Second) {
 				// It's 180 seconds over what out ping delay is, connection has probably dropped.
 
 				err := ErrTimedOut{
@@ -616,6 +617,7 @@ func (c *Client) pingLoop(ctx context.Context, errs chan error, working *int32) 
 			c.conn.lastPing.Store(time.Now())
 
 			c.Cmd.Ping(fmt.Sprintf("%d", time.Now().UnixNano()))
+			pingSent = true
 		case <-ctx.Done():
 			return
 		}
