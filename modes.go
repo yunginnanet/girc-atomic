@@ -7,7 +7,8 @@ package girc
 import (
 	"encoding/json"
 	"strings"
-	"sync"
+
+	cmap "github.com/orcaman/concurrent-map"
 )
 
 // CMode represents a single step of a given mode change.
@@ -395,50 +396,41 @@ func (s *state) userPrefixes() string {
 // UserPerms contains all of the permissions for each channel the user is
 // in.
 type UserPerms struct {
-	mu       sync.RWMutex
-	channels map[string]Perms
+	channels cmap.ConcurrentMap
 }
 
 // Copy returns a deep copy of the channel permissions.
 func (p *UserPerms) Copy() (perms *UserPerms) {
 	np := &UserPerms{
-		channels: make(map[string]Perms),
+		channels: cmap.New(),
 	}
-	for key := range p.channels {
-		np.channels[key] = p.channels[key]
+	for tuple := range p.channels.IterBuffered() {
+		np.channels.Set(tuple.Key, tuple.Val)
 	}
 	return np
 }
 
 // MarshalJSON implements json.Marshaler.
 func (p *UserPerms) MarshalJSON() ([]byte, error) {
-	p.mu.Lock()
 	out, err := json.Marshal(&p.channels)
-	p.mu.Unlock()
-
 	return out, err
 }
 
 // Lookup looks up the users permissions for a given channel. ok is false
 // if the user is not in the given channel.
 func (p *UserPerms) Lookup(channel string) (perms Perms, ok bool) {
-	p.mu.RLock()
-	defer p.mu.RUnlock()
-	perms, ok = p.channels[ToRFC1459(channel)]
-
+	var permsi interface{}
+	permsi, ok = p.channels.Get(ToRFC1459(channel))
+	perms = permsi.(Perms)
 	return perms, ok
 }
 
 func (p *UserPerms) set(channel string, perms Perms) {
-	p.mu.Lock()
-	p.channels[ToRFC1459(channel)] = perms
-	p.mu.Unlock()
+	p.channels.Set(ToRFC1459(channel), perms)
 }
 
 func (p *UserPerms) remove(channel string) {
-	p.mu.Lock()
-	delete(p.channels, ToRFC1459(channel))
-	p.mu.Unlock()
+	p.channels.Remove(ToRFC1459(channel))
 }
 
 // Perms contains all channel-based user permissions. The minimum op, and

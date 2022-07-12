@@ -459,7 +459,7 @@ func (s *state) createUser(src *Source) (u *User, ok bool) {
 		FirstSeen:   time.Now(),
 		LastActive:  time.Now(),
 		Network:     s.client.NetworkName(),
-		Perms:       &UserPerms{channels: make(map[string]Perms)},
+		Perms:       &UserPerms{channels: cmap.New()},
 	}
 
 	s.users.Set(src.ID(), u)
