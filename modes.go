@@ -421,7 +421,9 @@ func (p *UserPerms) MarshalJSON() ([]byte, error) {
 func (p *UserPerms) Lookup(channel string) (perms Perms, ok bool) {
 	var permsi interface{}
 	permsi, ok = p.channels.Get(ToRFC1459(channel))
-	perms = permsi.(Perms)
+	if ok {
+		perms = permsi.(Perms)
+	}
 	return perms, ok
 }
 
