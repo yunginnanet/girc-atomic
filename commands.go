@@ -111,7 +111,8 @@ func (cmd *Commands) Message(target, message string) {
 // Messagef sends a formated PRIVMSG to target (either channel, service, or
 // user).
 func (cmd *Commands) Messagef(target, format string, a ...interface{}) {
-	cmd.Message(target, fmt.Sprintf(Fmt(format), a...))
+	message := fmt.Sprintf(format, a...)
+	cmd.Message(target, Fmt(message))
 }
 
 // ErrInvalidSource is returned when a method needs to know the origin of an
@@ -119,79 +120,82 @@ func (cmd *Commands) Messagef(target, format string, a ...interface{}) {
 // server.)
 var ErrInvalidSource = errors.New("event has nil or invalid source address")
 
+var ErrDontKnowUser = errors.New("failed to lookup target user")
+
 // Reply sends a reply to channel or user, based on where the supplied event
 // originated from. See also ReplyTo(). Panics if the incoming event has no
 // source.
-func (cmd *Commands) Reply(event Event, message string) {
+func (cmd *Commands) Reply(event Event, message string) error {
 	if event.Source == nil {
-		panic(ErrInvalidSource)
+		return ErrInvalidSource
 	}
-
 	if len(event.Params) > 0 && IsValidChannel(event.Params[0]) {
 		cmd.Message(event.Params[0], message)
-		return
+		return nil
 	}
-
 	cmd.Message(event.Source.Name, message)
+	return nil
 }
 
 // ReplyKick kicks the source of the event from the channel where the event originated
-func (cmd *Commands) ReplyKick(event Event, reason string) {
+func (cmd *Commands) ReplyKick(event Event, reason string) error {
 	if event.Source == nil {
-		panic(ErrInvalidSource)
+		return ErrInvalidSource
 	}
-
 	if len(event.Params) > 0 && IsValidChannel(event.Params[0]) {
 		cmd.Kick(event.Params[0], event.Source.Name, reason)
 	}
+	return nil
 }
 
 // ReplyBan kicks the source of the event from the channel where the event originated.
 // Additionally, if a reason is provided, it will send a message to the channel.
-func (cmd *Commands) ReplyBan(event Event, reason string) {
+func (cmd *Commands) ReplyBan(event Event, reason string) (err error) {
 	if event.Source == nil {
-		panic(ErrInvalidSource)
+		return ErrInvalidSource
 	}
-
 	if reason != "" {
-		cmd.Replyf(event, "{red}{b}[BAN] {r}%s", reason)
+		err = cmd.Replyf(event, "{red}{b}[BAN] {r}%s", reason)
 	}
-
 	if len(event.Params) > 0 && IsValidChannel(event.Params[0]) {
-		cmd.Ban(event.Params[0], event.Source.Name)
+		cmd.Ban(event.Params[0], fmt.Sprintf("*!%s@%s", event.Source.Ident, event.Source.Host))
 	}
+	return
 }
 
 // Replyf sends a reply to channel or user with a format string, based on
 // where the supplied event originated from. See also ReplyTof(). Panics if
 // the incoming event has no source.
-func (cmd *Commands) Replyf(event Event, format string, a ...interface{}) {
-	cmd.Reply(event, fmt.Sprintf(Fmt(format), a...))
+// Formatted means both in the sense of Sprintf as well as girc style macros.
+func (cmd *Commands) Replyf(event Event, format string, a ...interface{}) error {
+	message := fmt.Sprintf(format, a...)
+	return cmd.Reply(event, Fmt(message))
 }
 
 // ReplyTo sends a reply to a channel or user, based on where the supplied
 // event originated from. ReplyTo(), when originating from a channel will
 // default to replying with "<user>, <message>". See also Reply(). Panics if
 // the incoming event has no source.
-func (cmd *Commands) ReplyTo(event Event, message string) {
+func (cmd *Commands) ReplyTo(event Event, message string) error {
 	if event.Source == nil {
-		panic(ErrInvalidSource)
+		return ErrInvalidSource
 	}
-
 	if len(event.Params) > 0 && IsValidChannel(event.Params[0]) {
 		cmd.Message(event.Params[0], event.Source.Name+", "+message)
-		return
+	} else {
+		cmd.Message(event.Source.Name, message)
 	}
-
-	cmd.Message(event.Source.Name, message)
+	return nil
 }
 
 // ReplyTof sends a reply to a channel or user with a format string, based
 // on where the supplied event originated from. ReplyTo(), when originating
 // from a channel will default to replying with "<user>, <message>". See
 // also Replyf(). Panics if the incoming event has no source.
-func (cmd *Commands) ReplyTof(event Event, format string, a ...interface{}) {
-	cmd.ReplyTo(event, fmt.Sprintf(Fmt(format), a...))
+// Formatted means both in the sense of Sprintf as well as girc style macros.
+func (cmd *Commands) ReplyTof(event Event, format string, a ...interface{}) error {
+	message := fmt.Sprintf(format, a...)
+	return cmd.ReplyTo(event, Fmt(message))
 }
 
 // Action sends a PRIVMSG ACTION (/me) to target (either channel, service,
@@ -215,9 +219,9 @@ func (cmd *Commands) Notice(target, message string) {
 }
 
 // Noticef sends a formated NOTICE to target (either channel, service, or
-// user).
+// user). Formatted means both in the sense of Sprintf as well as girc styling codes.
 func (cmd *Commands) Noticef(target, format string, a ...interface{}) {
-	cmd.Notice(target, fmt.Sprintf(format, a...))
+	cmd.Notice(target, Fmt(fmt.Sprintf(format, a...)))
 }
 
 // SendRaw sends a raw string (or multiple) to the server, without carriage
@@ -239,14 +243,21 @@ func (cmd *Commands) SendRaw(raw ...string) error {
 }
 
 // SendRawf sends a formated string back to the server, without carriage
-// returns or newlines.
+// returns or newlines. Formatted means both in the sense of Sprintf as well as girc style macros.
 func (cmd *Commands) SendRawf(format string, a ...interface{}) error {
-	return cmd.SendRaw(fmt.Sprintf(format, a...))
+	return cmd.SendRaw(Fmt(fmt.Sprintf(format, a...)))
 }
 
 // Topic sets the topic of channel to message. Does not verify the length
 // of the topic.
 func (cmd *Commands) Topic(channel, message string) {
+	cmd.c.Send(&Event{Command: TOPIC, Params: []string{channel, message}})
+}
+
+// Topicf sets a formatted topic command to the channel. Does not verify the length
+// of the topic. Formatted means both in the sense of Sprintf as well as girc style macros.
+func (cmd *Commands) Topicf(channel, format string, a ...interface{}) {
+	message := fmt.Sprintf(format, a...)
 	cmd.c.Send(&Event{Command: TOPIC, Params: []string{channel, Fmt(message)}})
 }
 
@@ -286,6 +297,22 @@ func (cmd *Commands) Oper(user, pass string) {
 	cmd.c.Send(&Event{Command: OPER, Params: []string{user, pass}, Sensitive: true})
 }
 
+// KickBan sends a KICK query to the server, attempting to kick nick from
+// channel, with reason. If reason is blank, one will not be sent to the
+// server. Afterwards it immediately sets +b on the mask given.
+// If no mask is given, it will set +b on *!~ident@host.
+//
+// Note: this command will return an error if it cannot track the user in order to determine ban mask.
+func (cmd *Commands) KickBan(channel, user, reason string) error {
+	u := cmd.c.LookupUser(user)
+	if u == nil {
+		return ErrDontKnowUser
+	}
+	cmd.Kick(channel, user, reason)
+	cmd.Ban(channel, fmt.Sprintf("*!%s@%s", u.Ident, u.Host))
+	return nil
+}
+
 // Kick sends a KICK query to the server, attempting to kick nick from
 // channel, with reason. If reason is blank, one will not be sent to the
 // server.
@@ -293,7 +320,6 @@ func (cmd *Commands) Kick(channel, user, reason string) {
 	if reason != "" {
 		cmd.c.Send(&Event{Command: KICK, Params: []string{channel, user, reason}})
 	}
-
 	cmd.c.Send(&Event{Command: KICK, Params: []string{channel, user}})
 }
 
