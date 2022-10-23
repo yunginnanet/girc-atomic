@@ -12,6 +12,8 @@ import (
 	"net"
 	"sync/atomic"
 	"time"
+
+	"git.tcp.direct/kayos/common/pool"
 )
 
 // Messages are delimited with CR and LF line endings, we're using the last
@@ -55,6 +57,8 @@ type Dialer interface {
 	Dial(network, address string) (net.Conn, error)
 }
 
+var strs = pool.NewStringFactory()
+
 // newConn sets up and returns a new connection to the server.
 func newConn(conf Config, dialer Dialer, addr string, sts *strictTransport) (*ircConn, error) {
 	if err := conf.isValid(); err != nil {
@@ -69,7 +73,11 @@ func newConn(conf Config, dialer Dialer, addr string, sts *strictTransport) (*ir
 
 		if conf.Bind != "" {
 			var local *net.TCPAddr
-			local, err = net.ResolveTCPAddr("tcp", conf.Bind+":0")
+			s := strs.Get()
+			s.MustWriteString(conf.Bind)
+			s.MustWriteString(":0")
+			local, err = net.ResolveTCPAddr("tcp", s.String())
+			strs.MustPut(s)
 			if err != nil {
 				return nil, err
 			}

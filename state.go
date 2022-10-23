@@ -144,7 +144,7 @@ type User struct {
 }
 
 // Channels returns a slice of pointers to Channel types that the client knows the user is in.
-func (u User) Channels(c *Client) []*Channel {
+func (u *User) Channels(c *Client) []*Channel {
 	if c == nil {
 		panic("nil Client provided")
 	}
@@ -450,17 +450,26 @@ func (s *state) createUser(src *Source) (u *User, ok bool) {
 		return nil, false
 	}
 
+	mask := strs.Get()
+	mask.MustWriteString(src.Name)
+	_ = mask.WriteByte('!')
+	mask.MustWriteString(src.Ident)
+	_ = mask.WriteByte('@')
+	mask.MustWriteString(src.Host)
+
 	u = &User{
 		Nick:        src.Name,
 		Host:        src.Host,
 		Ident:       src.Ident,
-		Mask:        src.Name + "!" + src.Ident + "@" + src.Host,
+		Mask:        mask.String(),
 		ChannelList: cmap.New(),
 		FirstSeen:   time.Now(),
 		LastActive:  time.Now(),
 		Network:     s.client.NetworkName(),
 		Perms:       &UserPerms{channels: cmap.New()},
 	}
+
+	strs.MustPut(mask)
 
 	s.users.Set(src.ID(), u)
 	return u, true

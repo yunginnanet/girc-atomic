@@ -66,7 +66,7 @@ var fmtCodes = map[string]string{
 //
 // For example:
 //
-//   client.Message("#channel", Fmt("{red}{b}Hello {red,blue}World{c}"))
+//	client.Message("#channel", Fmt("{red}{b}Hello {red,blue}World{c}"))
 func Fmt(text string) string {
 	var last = -1
 	for i := 0; i < len(text); i++ {
@@ -164,12 +164,12 @@ func StripRaw(text string) string {
 // all ASCII printable chars. This function will NOT do that for
 // compatibility reasons.
 //
-//   channel    =  ( "#" / "+" / ( "!" channelid ) / "&" ) chanstring
-//                 [ ":" chanstring ]
-//   chanstring =  0x01-0x07 / 0x08-0x09 / 0x0B-0x0C / 0x0E-0x1F / 0x21-0x2B
-//   chanstring =  / 0x2D-0x39 / 0x3B-0xFF
-//                   ; any octet except NUL, BELL, CR, LF, " ", "," and ":"
-//   channelid  = 5( 0x41-0x5A / digit )   ; 5( A-Z / 0-9 )
+//	channel    =  ( "#" / "+" / ( "!" channelid ) / "&" ) chanstring
+//	              [ ":" chanstring ]
+//	chanstring =  0x01-0x07 / 0x08-0x09 / 0x0B-0x0C / 0x0E-0x1F / 0x21-0x2B
+//	chanstring =  / 0x2D-0x39 / 0x3B-0xFF
+//	                ; any octet except NUL, BELL, CR, LF, " ", "," and ":"
+//	channelid  = 5( 0x41-0x5A / digit )   ; 5( A-Z / 0-9 )
 func IsValidChannel(channel string) bool {
 	if len(channel) <= 1 || len(channel) > 50 {
 		return false
@@ -214,10 +214,10 @@ func IsValidChannel(channel string) bool {
 // IsValidNick validates an IRC nickname. Note that this does not validate
 // IRC nickname length.
 //
-//   nickname =  ( letter / special ) *8( letter / digit / special / "-" )
-//   letter   =  0x41-0x5A / 0x61-0x7A
-//   digit    =  0x30-0x39
-//   special  =  0x5B-0x60 / 0x7B-0x7D
+//	nickname =  ( letter / special ) *8( letter / digit / special / "-" )
+//	letter   =  0x41-0x5A / 0x61-0x7A
+//	digit    =  0x30-0x39
+//	special  =  0x5B-0x60 / 0x7B-0x7D
 func IsValidNick(nick string) bool {
 	if nick == "" {
 		return false
@@ -253,8 +253,9 @@ func IsValidNick(nick string) bool {
 // not be supported on all networks. Some limit this to only a single period.
 //
 // Per RFC:
-//   user =  1*( %x01-09 / %x0B-0C / %x0E-1F / %x21-3F / %x41-FF )
-//           ; any octet except NUL, CR, LF, " " and "@"
+//
+//	user =  1*( %x01-09 / %x0B-0C / %x0E-1F / %x21-3F / %x41-FF )
+//	        ; any octet except NUL, CR, LF, " " and "@"
 func IsValidUser(name string) bool {
 	if name == "" {
 		return false
@@ -324,7 +325,7 @@ func Glob(input, match string) bool {
 
 	if len(parts) == 1 {
 		// No globs, test for equality.
-		return input == match
+		return strings.EqualFold(input, match)
 	}
 
 	leadingGlob, trailingGlob := strings.HasPrefix(match, globChar), strings.HasSuffix(match, globChar)

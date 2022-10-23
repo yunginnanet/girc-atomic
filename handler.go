@@ -25,15 +25,18 @@ func (c *Client) RunHandlers(event *Event) {
 		return
 	}
 
+	s := strs.Get()
 	// Log the event.
-	prefix := "< "
+	s.MustWriteString("< ")
 	if event.Echo {
-		prefix += "[echo-message] "
+		s.MustWriteString("[echo-message] ")
 	}
-	c.debug.Print(prefix + StripRaw(event.String()))
+	s.MustWriteString(event.String())
+	c.debug.Print(s.String())
+	strs.MustPut(s)
 	if c.Config.Out != nil {
 		if pretty, ok := event.Pretty(); ok {
-			fmt.Fprintln(c.Config.Out, StripRaw(pretty))
+			_, _ = fmt.Fprintln(c.Config.Out, StripRaw(pretty))
 		}
 	}
 
