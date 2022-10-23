@@ -136,12 +136,12 @@ func TestState(t *testing.T) {
 		}
 
 		adm := ch.Admins(c)
-		admList := []string{}
+		var admList []string
 		for i := 0; i < len(adm); i++ {
 			admList = append(admList, adm[i].Nick)
 		}
 		trusted := ch.Trusted(c)
-		trustedList := []string{}
+		var trustedList []string
 		for i := 0; i < len(trusted); i++ {
 			trustedList = append(trustedList, trusted[i].Nick)
 		}
@@ -250,7 +250,9 @@ func TestState(t *testing.T) {
 		bounceStart <- true
 	})
 
-	conn.SetDeadline(time.Now().Add(5 * time.Second))
+	if err := conn.SetDeadline(time.Now().Add(5 * time.Second)); err != nil {
+		t.Fatal(err)
+	}
 	_, err := conn.Write([]byte(mockConnStartState))
 	if err != nil {
 		panic(err)
@@ -316,7 +318,9 @@ func TestState(t *testing.T) {
 		bounceEnd <- true
 	})
 
-	conn.SetDeadline(time.Now().Add(5 * time.Second))
+	if err = conn.SetDeadline(time.Now().Add(5 * time.Second)); err != nil {
+		t.Fatal(err)
+	}
 	_, err = conn.Write([]byte(mockConnEndState))
 	if err != nil {
 		panic(err)

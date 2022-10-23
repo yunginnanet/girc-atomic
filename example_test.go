@@ -59,7 +59,7 @@ func Example_simple() {
 
 	client.Handlers.Add(girc.PRIVMSG, func(c *girc.Client, e girc.Event) {
 		if strings.Contains(e.Last(), "hello") {
-			c.Cmd.ReplyTo(e, "hello world!")
+			_ = c.Cmd.ReplyTo(e, "hello world!")
 			return
 		}
 
@@ -99,7 +99,7 @@ func Example_commands() {
 
 	client.Handlers.Add(girc.PRIVMSG, func(c *girc.Client, e girc.Event) {
 		if strings.HasPrefix(e.Last(), "!hello") {
-			c.Cmd.ReplyTo(e, girc.Fmt("{b}hello{b} {blue}world{c}!"))
+			_ = c.Cmd.ReplyTo(e, girc.Fmt("{b}hello{b} {blue}world{c}!"))
 			return
 		}
 

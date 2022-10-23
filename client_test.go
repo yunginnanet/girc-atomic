@@ -93,14 +93,24 @@ func TestClientLifetime(t *testing.T) {
 
 func TestClientUptime(t *testing.T) {
 	c, conn, server := genMockConn()
-	defer conn.Close()
-	defer server.Close()
+	defer func() {
+		if err := conn.Close(); err != nil {
+			t.Errorf("failed to close connection: %s", err)
+		}
+		if err := server.Close(); err != nil {
+			t.Errorf("failed to close server: %s", err)
+		}
+	}()
 	go mockReadBuffer(conn)
 
 	done := make(chan struct{}, 1)
 	c.Handlers.Add(INITIALIZED, func(c *Client, e Event) { close(done) })
 
-	go c.MockConnect(server)
+	go func() {
+		if err := c.MockConnect(server); err != nil {
+			t.Errorf("failed to connect: %s", err)
+		}
+	}()
 	defer c.Close()
 
 	select {
@@ -138,14 +148,24 @@ func TestClientUptime(t *testing.T) {
 
 func TestClientGet(t *testing.T) {
 	c, conn, server := genMockConn()
-	defer conn.Close()
-	defer server.Close()
+	defer func() {
+		if err := conn.Close(); err != nil {
+			t.Errorf("failed to close connection: %s", err)
+		}
+		if err := server.Close(); err != nil {
+			t.Errorf("failed to close server: %s", err)
+		}
+	}()
 	go mockReadBuffer(conn)
 
 	done := make(chan struct{}, 1)
 	c.Handlers.Add(INITIALIZED, func(c *Client, e Event) { close(done) })
 
-	go c.MockConnect(server)
+	go func() {
+		if err := c.MockConnect(server); err != nil {
+			t.Errorf("failed to connect: %s", err)
+		}
+	}()
 	defer c.Close()
 
 	select {
@@ -169,8 +189,14 @@ func TestClientGet(t *testing.T) {
 
 func TestClientClose(t *testing.T) {
 	c, conn, server := genMockConn()
-	defer server.Close()
-	defer conn.Close()
+	defer func() {
+		if err := conn.Close(); err != nil {
+			t.Errorf("failed to close connection: %s", err)
+		}
+		if err := server.Close(); err != nil {
+			t.Errorf("failed to close server: %s", err)
+		}
+	}()
 	go mockReadBuffer(conn)
 
 	errchan := make(chan error, 1)

@@ -111,7 +111,7 @@ func TestParseEvent(t *testing.T) {
 		}
 
 		if got == nil {
-			t.Errorf("ParseEvent: got nil, want: %s", tt.want)
+			t.Fatalf("ParseEvent: got nil, want: %s", tt.want)
 		}
 
 		if got.String() != tt.want {
@@ -133,6 +133,7 @@ func TestParseEvent(t *testing.T) {
 	}
 }
 
+//goland:noinspection GoNilness
 func TestEventCopy(t *testing.T) {
 	var nilEvent *Event
 
