@@ -51,9 +51,12 @@ type Tags map[string]string
 
 // ParseTags parses out the key-value map of tags. raw should only be the tag
 // data, not a full message. For example:
-//   @aaa=bbb;ccc;example.com/ddd=eee
+//
+//	@aaa=bbb;ccc;example.com/ddd=eee
+//
 // NOT:
-//   @aaa=bbb;ccc;example.com/ddd=eee :nick!ident@host.com PRIVMSG me :Hello
+//
+//	@aaa=bbb;ccc;example.com/ddd=eee :nick!ident@host.com PRIVMSG me :Hello
 //
 // Technically, there is a length limit of 4096, but the server should reject
 // tag messages longer than this.
@@ -249,10 +252,6 @@ func (t Tags) Get(key string) (tag string, success bool) {
 // Set escapes given value and saves it as the value for given key. Note that
 // this is not concurrent safe.
 func (t Tags) Set(key, value string) error {
-	if t == nil {
-		t = make(Tags)
-	}
-
 	if !validTag(key) {
 		return fmt.Errorf("tag key %q is invalid", key)
 	}

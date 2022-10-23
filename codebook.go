@@ -4,6 +4,7 @@ package girc
 IRCNumToStr takes in a numeric IRC code and returns the relevant girc name.
 IRCNumToStr accepts a string because that's how we tend to receive the codes.
 */
+//goland:noinspection GoUnusedExportedFunction
 func IRCNumToStr(code string) string {
 	if _, ok := noTranslate[code]; ok {
 		return code

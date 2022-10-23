@@ -5,6 +5,8 @@
 package girc
 
 // Standard CTCP based constants.
+//
+//goland:noinspection ALL
 const (
 	CTCP_ACTION     = "ACTION"
 	CTCP_PING       = "PING"
@@ -20,6 +22,8 @@ const (
 
 // Emulated event commands used to allow easier hooks into the changing
 // state of the client.
+//
+//goland:noinspection ALL
 const (
 	UPDATE_STATE     = "CLIENT_STATE_UPDATED"   // when channel/user state is updated.
 	UPDATE_GENERAL   = "CLIENT_GENERAL_UPDATED" // when general state (client nick, server name, etc) is updated.
@@ -33,6 +37,8 @@ const (
 )
 
 // User/channel prefixes :: RFC1459.
+//
+//goland:noinspection ALL
 const (
 	DefaultPrefixes = "(ov)@+" // the most common default prefixes
 	ModeAddPrefix   = "+"      // modes are being added
@@ -48,6 +54,8 @@ const (
 )
 
 // User modes :: RFC1459; section 4.2.3.2.
+//
+//goland:noinspection ALL
 const (
 	UserModeInvisible     = "i" // invisible
 	UserModeOperator      = "o" // server operator
@@ -56,6 +64,8 @@ const (
 )
 
 // Channel modes :: RFC1459; section 4.2.3.1.
+//
+//goland:noinspection ALL
 const (
 	ModeDefaults = "beI,k,l,imnpst" // the most common default modes
 
@@ -75,6 +85,8 @@ const (
 )
 
 // IRC commands :: RFC2812; section 3 :: RFC2813; section 4.
+//
+//goland:noinspection ALL
 const (
 	ADMIN    = "ADMIN"
 	AWAY     = "AWAY"
@@ -127,6 +139,8 @@ const (
 )
 
 // Numeric IRC reply mapping :: RFC2812; section 5.
+//
+//goland:noinspection ALL
 const (
 	RPL_WELCOME           = "001"
 	RPL_YOURHOST          = "002"
@@ -270,6 +284,8 @@ const (
 )
 
 // IRCv3 commands and extensions :: http://ircv3.net/irc/.
+//
+//goland:noinspection ALL
 const (
 	AUTHENTICATE = "AUTHENTICATE"
 	MONITOR      = "MONITOR"
@@ -293,6 +309,8 @@ const (
 )
 
 // Numeric IRC reply mapping for ircv3 :: http://ircv3.net/irc/.
+//
+//goland:noinspection ALL
 const (
 	RPL_LOGGEDIN     = "900"
 	RPL_LOGGEDOUT    = "901"
@@ -313,6 +331,8 @@ const (
 )
 
 // Numeric IRC event mapping :: RFC2812; section 5.3.
+//
+//goland:noinspection ALL
 const (
 	RPL_STATSCLINE    = "213"
 	RPL_STATSNLINE    = "214"
@@ -341,6 +361,8 @@ const (
 )
 
 // Misc.
+//
+//goland:noinspection ALL
 const (
 	ERR_TOOMANYMATCHES = "416" // IRCNet.
 	RPL_GLOBALUSERS    = "266" // aircd/hybrid/bahamut, used on freenode.
@@ -351,6 +373,8 @@ const (
 )
 
 // As seen in the wild.
+//
+//goland:noinspection ALL
 const (
 	RPL_WHOISAUTHNAME = "330"
 	RPL_WHOISTLS      = "671"

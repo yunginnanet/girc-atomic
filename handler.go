@@ -552,6 +552,8 @@ func (e *HandlerError) String() string {
 // DefaultRecoverHandler can be used with Config.RecoverFunc as a default
 // catch-all for panics. This will log the error, and the call trace to the
 // debug log (see Config.Debug), or os.Stdout if Config.Debug is unset.
+//
+//goland:noinspection GoUnusedExportedFunction
 func DefaultRecoverHandler(client *Client, err *HandlerError) {
 	if client.Config.Debug == nil {
 		fmt.Println(err.Error())

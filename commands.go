@@ -120,6 +120,7 @@ func (cmd *Commands) Messagef(target, format string, a ...interface{}) {
 // server.)
 var ErrInvalidSource = errors.New("event has nil or invalid source address")
 
+// ErrDontKnowUser is returned when a method needs to know the origin of an event,
 var ErrDontKnowUser = errors.New("failed to lookup target user")
 
 // Reply sends a reply to channel or user, based on where the supplied event
