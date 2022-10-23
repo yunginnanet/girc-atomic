@@ -258,7 +258,7 @@ type Channel struct {
 
 // Users returns a reference of *Users that the client knows the channel has
 // If you're just looking for just the name of the users, use Channnel.UserList.
-func (ch Channel) Users(c *Client) []*User {
+func (ch *Channel) Users(c *Client) []*User {
 	if c == nil {
 		panic("nil Client provided")
 	}
@@ -278,7 +278,7 @@ func (ch Channel) Users(c *Client) []*User {
 
 // Trusted returns a list of users which have voice or greater in the given
 // channel. See Perms.IsTrusted() for more information.
-func (ch Channel) Trusted(c *Client) []*User {
+func (ch *Channel) Trusted(c *Client) []*User {
 	if c == nil {
 		panic("nil Client provided")
 	}
@@ -303,7 +303,7 @@ func (ch Channel) Trusted(c *Client) []*User {
 // Admins returns a list of users which have half-op (if supported), or
 // greater permissions (op, admin, owner, etc) in the given channel. See
 // Perms.IsAdmin() for more information.
-func (ch Channel) Admins(c *Client) []*User {
+func (ch *Channel) Admins(c *Client) []*User {
 	if c == nil {
 		panic("nil Client provided")
 	}
