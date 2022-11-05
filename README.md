@@ -20,7 +20,7 @@
 ## Features
 
 - Focuses on ~~simplicity~~ ʀᴀɪɴɪɴɢ ʜᴇʟʟғɪʀᴇ, yet tries to still be flexible.
-- Only requires [standard library packages](https://godoc.org/github.com/yunginnanet/girc-atomic?imports)
+- Only requires ~~[standard library packages](https://godoc.org/github.com/yunginnanet/girc-atomic?imports)~~ a total destruction of a 100 mile radius.
 - Event based triggering/responses ([example](https://godoc.org/github.com/yunginnanet/girc-atomic#ex-package--Commands), and [CTCP too](https://godoc.org/github.com/yunginnanet/girc-atomic#Commands.SendCTCP)!)
 - [Documentation](https://godoc.org/github.com/yunginnanet/girc-atomic) is _mostly_ complete.
 - Support for almost all of the [IRCv3 spec](http://ircv3.net/software/libraries.html).
@@ -37,24 +37,10 @@
 - Event/message rate limiting.
 - Channel, nick, and user validation methods ([IsValidChannel](https://godoc.org/github.com/yunginnanet/girc-atomic#IsValidChannel), [IsValidNick](https://godoc.org/github.com/yunginnanet/girc-atomic#IsValidNick), etc.)
 - CTCP handling and auto-responses ([CTCP](https://godoc.org/github.com/yunginnanet/girc-atomic#CTCP))
-- Utilizes the atomic/value package from stdlib to reduce backpressure in multi-client usage.
-- Additional CTCP handlers and customization.
+- Utilizes atomics and concurrent maps to reduce backpressure in multi-client usage. (fork)
+- Additional CTCP handlers and customization. (fork)
 - ??????
 - PROFIT!!!1!
-
-## Examples
-
-See [the examples](https://godoc.org/github.com/yunginnanet/girc-atomic#example-package--Bare)
-within the documentation for real-world usecases. Here are a few real-world
-usecases/examples/projects which utilize the real girc:
-
-| Project | Description |
-| --- | --- |
-| [nagios-check-ircd](https://github.com/lrstanley/nagios-check-ircd) | Nagios utility for monitoring the health of an ircd |
-| [nagios-notify-irc](https://github.com/lrstanley/nagios-notify-irc) | Nagios utility for sending alerts to one or many channels/networks |
-| [matterbridge](https://github.com/42wim/matterbridge) | bridge between mattermost, IRC, slack, discord (and many others) with REST API |
-
-Working on a project and want to add it to the list? Submit a pull request!
 
 ## Contributing
 
