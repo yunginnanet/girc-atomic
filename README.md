@@ -75,7 +75,7 @@ on submitting pull requests and helping out.~~
 
 girc artwork licensed under [CC 3.0](http://creativecommons.org/licenses/by/3.0/) based on Renee French under Creative Commons 3.0 Attributions
 
-later defiled by [some idiot](https://github.com/yunginnanet).
+...and then later defiled by [some idiot](https://github.com/yunginnanet).
 
 ## References
 
