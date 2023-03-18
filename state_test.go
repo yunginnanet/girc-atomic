@@ -284,10 +284,9 @@ func TestState(t *testing.T) {
 			return
 		}
 
-		chi, chnok := user.ChannelList.Get("#channel")
-		chn, chiok := chi.(*Channel)
+		chn, chnok := user.ChannelList.Get("#channel")
 
-		if !chnok || !chiok {
+		if !chnok {
 			t.Errorf("should have been able to get a pointer by looking up #channel")
 			return
 		}
@@ -297,8 +296,7 @@ func TestState(t *testing.T) {
 			return
 		}
 
-		chi2, _ := user.ChannelList.Get("#channel2")
-		chn2, _ := chi2.(*Channel)
+		chn2, _ := user.ChannelList.Get("#channel2")
 
 		if chn2.Len() != len([]string{"notjones"}) {
 			t.Errorf("channel.UserList.Count() == %d, wanted %d",

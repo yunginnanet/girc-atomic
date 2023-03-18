@@ -10,7 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	cmap "github.com/orcaman/concurrent-map"
+	cmap "github.com/orcaman/concurrent-map/v2"
 )
 
 // state represents the actively-changing variables within the client
@@ -22,12 +22,13 @@ type state struct {
 	nick, ident, host atomic.Value
 	// channels represents all channels we're active in.
 	// channels map[string]*Channel
-	channels cmap.ConcurrentMap
+	channels cmap.ConcurrentMap[string, *Channel]
 	// users represents all of users that we're tracking.
 	// users map[string]*User
-	users cmap.ConcurrentMap
+	users cmap.ConcurrentMap[string, *User]
 	// enabledCap are the capabilities which are enabled for this connection.
-	enabledCap map[string]map[string]string
+	// enabledCap map[string]map[string]string
+	enabledCap cmap.ConcurrentMap[string, map[string]string]
 	// tmpCap are the capabilties which we share with the server during the
 	// last capability check. These will get sent once we have received the
 	// last capability list command from the server.
@@ -35,7 +36,8 @@ type state struct {
 	// serverOptions are the standard capabilities and configurations
 	// supported by the server at connection time. This also includes
 	// RPL_ISUPPORT entries.
-	serverOptions cmap.ConcurrentMap
+	// serverOptions map[string]string
+	serverOptions cmap.ConcurrentMap[string, string]
 
 	// network is an alternative way to store and retrieve the NETWORK server option.
 	network atomic.Value
@@ -54,22 +56,31 @@ type state struct {
 	sts strictTransport
 }
 
+type Clearer interface {
+	Clear()
+}
+
 // reset resets the state back to it's original form.
 func (s *state) reset(initial bool) {
 	s.nick.Store("")
 	s.ident.Store("")
 	s.host.Store("")
 	s.network.Store("")
-	var cmaps = []*cmap.ConcurrentMap{&s.channels, &s.users, &s.serverOptions}
-	for _, cm := range cmaps {
-		if initial {
-			*cm = cmap.New()
-		} else {
+	var cmaps = []Clearer{&s.channels, &s.users, &s.serverOptions}
+	for i, cm := range cmaps {
+		switch {
+		case i == 0 && initial:
+			cm = cmap.New[*Channel]()
+		case i == 1 && initial:
+			cm = cmap.New[*User]()
+		case i == 2 && initial:
+			cm = cmap.New[string]()
+		default:
 			cm.Clear()
 		}
 	}
 
-	s.enabledCap = make(map[string]map[string]string)
+	s.enabledCap = cmap.New[map[string]string]()
 	s.tmpCap = make(map[string]map[string]string)
 	s.motd = ""
 
@@ -106,8 +117,8 @@ type User struct {
 	//
 	// NOTE: If the ChannelList is empty for the user, then the user's info could be out of date.
 	// turns out Concurrent-Map implements json.Marhsal!
-	// https://github.com/orcaman/concurrent-map/blob/893feb299719d9cbb2cfbe08b6dd4eb567d8039d/concurrent_map.go#L305
-	ChannelList cmap.ConcurrentMap `json:"channels"`
+	// https://github.com/orcaman/concurrent-map/v2/blob/893feb299719d9cbb2cfbe08b6dd4eb567d8039d/concurrent_map.go#L305
+	ChannelList cmap.ConcurrentMap[string, *Channel] `json:"channels"`
 
 	// FirstSeen represents the first time that the user was seen by the
 	// client for the given channel. Only usable if from state, not in past.
@@ -152,8 +163,8 @@ func (u *User) Channels(c *Client) []*Channel {
 	var channels []*Channel
 
 	for listed := range u.ChannelList.IterBuffered() {
-		chn, chok := listed.Val.(*Channel)
-		if chok {
+		chn := listed.Val
+		if chn != nil {
 			channels = append(channels, chn)
 			continue
 		}
@@ -178,7 +189,9 @@ func (u *User) Copy() *User {
 	*nu = *u
 
 	nu.Perms = u.Perms.Copy()
-	_ = copy(nu.ChannelList, u.ChannelList)
+	for ch := range u.ChannelList.IterBuffered() {
+		nu.ChannelList.Set(ch.Key, ch.Val)
+	}
 
 	return nu
 }
@@ -197,7 +210,7 @@ func (u *User) addChannel(name string, chn *Channel) {
 
 	u.ChannelList.Set(name, chn)
 
-	u.Perms.set(name, Perms{})
+	u.Perms.set(name, &Perms{})
 }
 
 // deleteChannel removes an existing channel from the users channel list.
@@ -246,7 +259,7 @@ type Channel struct {
 	Created string `json:"created"`
 	// UserList is a sorted list of all users we are currently tracking within
 	// the channel. Each is the1 nickname, and is rfc1459 compliant.
-	UserList cmap.ConcurrentMap `json:"user_list"`
+	UserList cmap.ConcurrentMap[string, *User] `json:"user_list"`
 	// Network is the name of the IRC network where this channel was found.
 	// This has been added for the purposes of girc being used in multi-client scenarios with data persistence.
 	Network string `json:"network"`
@@ -312,19 +325,17 @@ func (ch *Channel) Admins(c *Client) []*User {
 
 	for listed := range ch.UserList.IterBuffered() {
 		ui := listed.Val
-		user, usrok := ui.(*User)
-		if !usrok {
-			user = c.state.lookupUser(listed.Key)
-			if user == nil {
+
+		if ui == nil {
+			if ui = c.state.lookupUser(listed.Key); ui == nil {
 				continue
-			} else {
-				ch.UserList.Set(listed.Key, user)
 			}
+			ch.UserList.Set(listed.Key, ui)
 		}
 
-		perms, ok := user.Perms.Lookup(ch.Name)
+		perms, ok := ui.Perms.Lookup(ch.Name)
 		if ok && perms.IsAdmin() {
-			users = append(users, user)
+			users = append(users, ui)
 		}
 	}
 
@@ -354,7 +365,9 @@ func (ch *Channel) Copy() *Channel {
 	nc := &Channel{}
 	*nc = *ch
 
-	_ = copy(nc.UserList, ch.UserList)
+	for v := range ch.UserList.IterBuffered() {
+		nc.UserList.Set(v.Val.Nick, v.Val)
+	}
 
 	// And modes.
 	nc.Modes = ch.Modes.Copy()
@@ -391,7 +404,7 @@ func (s *state) createChannel(name string) (ok bool) {
 
 	s.channels.Set(ToRFC1459(name), &Channel{
 		Name:     name,
-		UserList: cmap.New(),
+		UserList: cmap.New[*User](),
 		Joined:   time.Now(),
 		Network:  s.client.NetworkName(),
 		Modes:    NewCModes(supported, prefixes),
@@ -404,17 +417,14 @@ func (s *state) createChannel(name string) (ok bool) {
 func (s *state) deleteChannel(name string) {
 	name = ToRFC1459(name)
 
-	c, ok := s.channels.Get(name)
+	chn, ok := s.channels.Get(name)
 	if !ok {
 		return
 	}
 
-	chn := c.(*Channel)
-
 	for listed := range chn.UserList.IterBuffered() {
-		ui, _ := s.users.Get(listed.Key)
-		usr, usrok := ui.(*User)
-		if usrok {
+		usr, uok := s.users.Get(listed.Key)
+		if uok {
 			usr.deleteChannel(name)
 		}
 	}
@@ -426,28 +436,26 @@ func (s *state) deleteChannel(name string) {
 // found.
 func (s *state) lookupChannel(name string) *Channel {
 	ci, cok := s.channels.Get(ToRFC1459(name))
-	chn, ok := ci.(*Channel)
-	if !ok || !cok {
+	if ci == nil || !cok {
 		return nil
 	}
-	return chn
+	return ci
 }
 
 // lookupUser returns a reference to a user, nil returned if no results
 // found.
 func (s *state) lookupUser(name string) *User {
-	ui, uok := s.users.Get(ToRFC1459(name))
-	usr, ok := ui.(*User)
-	if !ok || !uok {
+	usr, uok := s.users.Get(ToRFC1459(name))
+	if usr == nil || !uok {
 		return nil
 	}
 	return usr
 }
 
 func (s *state) createUser(src *Source) (u *User, ok bool) {
-	if _, ok := s.users.Get(src.ID()); ok {
+	if u, ok = s.users.Get(src.ID()); ok {
 		// User already exists.
-		return nil, false
+		return u, false
 	}
 
 	mask := strs.Get()
@@ -462,11 +470,11 @@ func (s *state) createUser(src *Source) (u *User, ok bool) {
 		Host:        src.Host,
 		Ident:       src.Ident,
 		Mask:        mask.String(),
-		ChannelList: cmap.New(),
+		ChannelList: cmap.New[*Channel](),
 		FirstSeen:   time.Now(),
 		LastActive:  time.Now(),
 		Network:     s.client.NetworkName(),
-		Perms:       &UserPerms{channels: cmap.New()},
+		Perms:       &UserPerms{channels: cmap.New[*Perms]()},
 	}
 
 	strs.MustPut(mask)
@@ -521,7 +529,7 @@ func (s *state) renameUser(from, to string) {
 	}
 
 	if old != nil && user == nil {
-		user = old.(*User)
+		user = old
 	}
 
 	user.Nick = to
@@ -529,12 +537,11 @@ func (s *state) renameUser(from, to string) {
 	s.users.Set(ToRFC1459(to), user)
 
 	for chanchan := range s.channels.IterBuffered() {
-		chi := chanchan.Val
-		chn, chok := chi.(*Channel)
-		if !chok {
+		chn := chanchan.Val
+		if chn == nil {
 			continue
 		}
-		if old, oldok := chn.UserList.Pop(from); oldok {
+		if old, oldok = chn.UserList.Pop(from); oldok {
 			chn.UserList.Set(to, old)
 		}
 	}

@@ -9,6 +9,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	cmap "github.com/orcaman/concurrent-map/v2"
 )
 
 // ctcpDelim if the delimiter used for CTCP formatted events/messages.
@@ -122,12 +124,12 @@ type CTCP struct {
 	// mu is the mutex that should be used when accessing any ctcp handlers.
 	mu sync.RWMutex
 	// handlers is a map of CTCP message -> functions.
-	handlers map[string]CTCPHandler
+	handlers cmap.ConcurrentMap[string, CTCPHandler]
 }
 
 // newCTCP returns a new clean CTCP handler.
 func newCTCP() *CTCP {
-	return &CTCP{handlers: map[string]CTCPHandler{}}
+	return &CTCP{handlers: cmap.New[CTCPHandler]()}
 }
 
 // call executes the necessary CTCP handler for the incoming event/CTCP
@@ -137,23 +139,16 @@ func (c *CTCP) call(client *Client, event *CTCPEvent) {
 	if client.Config.RecoverFunc != nil && event.Origin != nil {
 		defer recoverHandlerPanic(client, event.Origin, "ctcp-"+strings.ToLower(event.Command), 3)
 	}
-
 	// Support wildcard CTCP event handling. Gets executed first before
 	// regular event handlers.
-	if _, ok := c.handlers["*"]; ok {
-		c.handlers["*"](client, *event)
+	if val, ok := c.handlers.Get("*"); ok && val != nil {
+		val(client, *event)
 	}
-
-	if _, ok := c.handlers[event.Command]; !ok {
-		// If ACTION, don't do anything.
-		if event.Command == CTCP_ACTION {
-			return
-		}
-
+	val, ok := c.handlers.Get(event.Command)
+	if !ok || val == nil || event.Command == CTCP_ACTION {
 		return
 	}
-
-	c.handlers[event.Command](client, *event)
+	val(client, *event)
 }
 
 // parseCMD parses a CTCP command/tag, ensuring it's valid. If not, an empty
@@ -185,9 +180,7 @@ func (c *CTCP) Set(cmd string, handler func(client *Client, ctcp CTCPEvent)) {
 	if cmd = c.parseCMD(cmd); cmd == "" {
 		return
 	}
-	c.mu.Lock()
-	c.handlers[cmd] = handler
-	c.mu.Unlock()
+	c.handlers.Set(cmd, handler)
 }
 
 // SetBg is much like Set, however the handler is executed in the background,
@@ -204,18 +197,12 @@ func (c *CTCP) Clear(cmd string) {
 	if cmd = c.parseCMD(cmd); cmd == "" {
 		return
 	}
-
-	c.mu.Lock()
-	delete(c.handlers, cmd)
-	c.mu.Unlock()
+	c.handlers.Remove(cmd)
 }
 
 // ClearAll removes all currently setup and re-sets the default handlers.
 func (c *CTCP) ClearAll() {
-	c.mu.Lock()
-	c.handlers = map[string]CTCPHandler{}
-	c.mu.Unlock()
-
+	c.handlers = cmap.New[CTCPHandler]()
 	// Register necessary handlers.
 	c.addDefaultHandlers()
 }

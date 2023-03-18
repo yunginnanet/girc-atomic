@@ -21,6 +21,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	cmap "github.com/orcaman/concurrent-map/v2"
 )
 
 // Client contains all of the information necessary to run a single IRC
@@ -222,13 +224,13 @@ type Config struct {
 // server.
 //
 // Client expectations:
-//  - Perform any proxy resolution.
-//  - Check the reverse DNS and forward DNS match.
-//  - Check the IP against suitable access controls (ipaccess, dnsbl, etc).
+//   - Perform any proxy resolution.
+//   - Check the reverse DNS and forward DNS match.
+//   - Check the IP against suitable access controls (ipaccess, dnsbl, etc).
 //
 // More information:
-//  - https://ircv3.net/specs/extensions/webirc.html
-//  - https://kiwiirc.com/docs/webirc
+//   - https://ircv3.net/specs/extensions/webirc.html
+//   - https://kiwiirc.com/docs/webirc
 type WebIRC struct {
 	// Password that authenticates the WEBIRC command from this client.
 	Password string
@@ -340,7 +342,12 @@ func New(config Config) *Client {
 	c.Handlers = newCaller(c, c.debug)
 
 	// Give ourselves a new state.
-	c.state = &state{}
+	c.state = &state{
+		channels:      cmap.New[*Channel](),
+		users:         cmap.New[*User](),
+		enabledCap:    cmap.New[map[string]string](),
+		serverOptions: cmap.New[string](),
+	}
 	c.state.RWMutex = &sync.RWMutex{}
 	c.state.reset(true)
 
@@ -600,7 +607,7 @@ func (c *Client) ChannelList() []string {
 
 	channels := make([]string, 0, len(c.state.channels.Keys()))
 	for channel := range c.state.channels.IterBuffered() {
-		chn := channel.Val.(*Channel)
+		chn := channel.Val
 		if !chn.UserIn(c.GetNick()) {
 			continue
 		}
@@ -616,9 +623,9 @@ func (c *Client) ChannelList() []string {
 func (c *Client) Channels() []*Channel {
 	c.panicIfNotTracking()
 
-	channels := make([]*Channel, 0, len(c.state.channels))
+	channels := make([]*Channel, 0, c.state.channels.Count())
 	for channel := range c.state.channels.IterBuffered() {
-		chn := channel.Val.(*Channel)
+		chn := channel.Val
 		channels = append(channels, chn.Copy())
 	}
 
@@ -633,9 +640,9 @@ func (c *Client) Channels() []*Channel {
 func (c *Client) UserList() []string {
 	c.panicIfNotTracking()
 
-	users := make([]string, 0, len(c.state.users))
+	users := make([]string, 0, c.state.users.Count())
 	for user := range c.state.users.IterBuffered() {
-		usr := user.Val.(*User)
+		usr := user.Val
 		if usr.Stale {
 			continue
 		}
@@ -651,9 +658,9 @@ func (c *Client) UserList() []string {
 func (c *Client) Users() []*User {
 	c.panicIfNotTracking()
 
-	users := make([]*User, 0, len(c.state.users))
+	users := make([]*User, 0, c.state.users.Count())
 	for user := range c.state.users.IterBuffered() {
-		usr := user.Val.(*User)
+		usr := user.Val
 		users = append(users, usr.Copy())
 	}
 
@@ -702,17 +709,14 @@ func (c *Client) IsInChannel(channel string) (in bool) {
 // during client connection. This is also known as ISUPPORT (or RPL_PROTOCTL).
 // Will panic if used when tracking has been disabled. Examples of usage:
 //
-//   nickLen, success := GetServerOpt("MAXNICKLEN")
-//
+//	nickLen, success := GetServerOpt("MAXNICKLEN")
 func (c *Client) GetServerOpt(key string) (result string, ok bool) {
 	c.panicIfNotTracking()
 
-	oi, ok := c.state.serverOptions.Get(key)
+	result, ok = c.state.serverOptions.Get(key)
 	if !ok {
 		return "", ok
 	}
-
-	result = oi.(string)
 
 	if len(result) > 0 {
 		ok = true
@@ -726,7 +730,7 @@ func (c *Client) GetServerOpt(key string) (result string, ok bool) {
 func (c *Client) GetServerOptions() []byte {
 	o := make(map[string]string)
 	for opt := range c.state.serverOptions.IterBuffered() {
-		o[opt.Key] = opt.Val.(string)
+		o[opt.Key] = opt.Val
 	}
 	jcytes, _ := json.Marshal(o)
 	return jcytes
@@ -799,15 +803,13 @@ func (c *Client) HasCapability(name string) (has bool) {
 
 	name = strings.ToLower(name)
 
-	c.state.RLock()
-	for key := range c.state.enabledCap {
-		key = strings.ToLower(key)
+	for capab := range c.state.enabledCap.IterBuffered() {
+		key := strings.ToLower(capab.Key)
 		if key == name {
 			has = true
 			break
 		}
 	}
-	c.state.RUnlock()
 
 	return has
 }

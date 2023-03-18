@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 	"strings"
 
-	cmap "github.com/orcaman/concurrent-map"
+	cmap "github.com/orcaman/concurrent-map/v2"
 )
 
 // CMode represents a single step of a given mode change.
@@ -370,13 +370,9 @@ func handleMODE(c *Client, e Event) {
 // chanModes returns the ISUPPORT list of server-supported channel modes,
 // alternatively falling back to ModeDefaults.
 func (s *state) chanModes() string {
-	if validmodes, ok := s.serverOptions.Get("CHANMODES"); ok {
-		modes := validmodes.(string)
-		if IsValidChannelMode(modes) {
-			return modes
-		}
+	if validmodes, ok := s.serverOptions.Get("CHANMODES"); ok && IsValidChannelMode(validmodes) {
+		return validmodes
 	}
-
 	return ModeDefaults
 }
 
@@ -384,26 +380,22 @@ func (s *state) chanModes() string {
 // This includes mode characters, as well as user prefix symbols. Falls back
 // to DefaultPrefixes if not server-supported.
 func (s *state) userPrefixes() string {
-	if pi, ok := s.serverOptions.Get("PREFIX"); ok {
-		prefix := pi.(string)
-		if isValidUserPrefix(prefix) {
-			return prefix
-		}
+	if prefix, ok := s.serverOptions.Get("PREFIX"); ok && isValidUserPrefix(prefix) {
+		return prefix
 	}
-
 	return DefaultPrefixes
 }
 
 // UserPerms contains all of the permissions for each channel the user is
 // in.
 type UserPerms struct {
-	channels cmap.ConcurrentMap
+	channels cmap.ConcurrentMap[string, *Perms]
 }
 
 // Copy returns a deep copy of the channel permissions.
 func (p *UserPerms) Copy() (perms *UserPerms) {
 	np := &UserPerms{
-		channels: cmap.New(),
+		channels: cmap.New[*Perms](),
 	}
 	for tuple := range p.channels.IterBuffered() {
 		np.channels.Set(tuple.Key, tuple.Val)
@@ -419,16 +411,11 @@ func (p *UserPerms) MarshalJSON() ([]byte, error) {
 
 // Lookup looks up the users permissions for a given channel. ok is false
 // if the user is not in the given channel.
-func (p *UserPerms) Lookup(channel string) (perms Perms, ok bool) {
-	var permsi interface{}
-	permsi, ok = p.channels.Get(ToRFC1459(channel))
-	if ok {
-		perms = permsi.(Perms)
-	}
-	return perms, ok
+func (p *UserPerms) Lookup(channel string) (perms *Perms, ok bool) {
+	return p.channels.Get(ToRFC1459(channel))
 }
 
-func (p *UserPerms) set(channel string, perms Perms) {
+func (p *UserPerms) set(channel string, perms *Perms) {
 	p.channels.Set(ToRFC1459(channel), perms)
 }
 

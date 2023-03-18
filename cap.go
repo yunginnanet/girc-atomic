@@ -122,8 +122,7 @@ func handleCAP(c *Client, e Event) {
 	if len(e.Params) >= 2 && e.Params[1] == CAP_DEL {
 		caps := parseCap(e.Last())
 		for capab := range caps {
-			// TODO: test the deletion.
-			delete(c.state.enabledCap, capab)
+			c.state.enabledCap.Remove(capab)
 		}
 		return
 	}
@@ -194,10 +193,10 @@ func handleCAP(c *Client, e Event) {
 		enabled := strings.Split(e.Last(), " ")
 		for _, capab := range enabled {
 			if val, ok := c.state.tmpCap[capab]; ok {
-				c.state.enabledCap[capab] = val
-			} else {
-				c.state.enabledCap[capab] = nil
+				c.state.enabledCap.Set(capab, val)
+				continue
 			}
+			c.state.enabledCap.Remove(capab)
 		}
 
 		// Anything client side that needs to be setup post-capability-acknowledgement,
@@ -205,7 +204,7 @@ func handleCAP(c *Client, e Event) {
 
 		// Handle STS, and only if it's something specifically we enabled (client
 		// may choose to disable girc automatic STS, and do it themselves).
-		if sts, sok := c.state.enabledCap["sts"]; sok && !c.Config.DisableSTS {
+		if sts, sok := c.state.enabledCap.Get("sts"); sok && !c.Config.DisableSTS {
 			var isError bool
 			// Some things are updated in the policy depending on if the current
 			// connection is over tls or not.
@@ -285,7 +284,7 @@ func handleCAP(c *Client, e Event) {
 		// due to cap-notify, we can re-evaluate what we can support.
 		c.state.tmpCap = make(map[string]map[string]string)
 
-		if _, ok := c.state.enabledCap["sasl"]; ok && c.Config.SASL != nil {
+		if _, ok := c.state.enabledCap.Get("sasl"); ok && c.Config.SASL != nil {
 			c.write(&Event{Command: AUTHENTICATE, Params: []string{c.Config.SASL.Method()}})
 			// Don't "CAP END", since we want to authenticate.
 			return

@@ -15,7 +15,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/orcaman/concurrent-map"
+	cmap "github.com/orcaman/concurrent-map/v2"
 )
 
 // RunHandlers manually runs handlers for a given event.
@@ -81,7 +81,7 @@ func (f HandlerFunc) Execute(client *Client, event Event) {
 //
 // command and cuid are both strings.
 type nestedHandlers struct {
-	cm cmap.ConcurrentMap
+	cm cmap.ConcurrentMap[string, cmap.ConcurrentMap[string, Handler]]
 }
 
 type handlerTuple struct {
@@ -90,40 +90,37 @@ type handlerTuple struct {
 }
 
 func newNestedHandlers() *nestedHandlers {
-	return &nestedHandlers{cm: cmap.New()}
+	return &nestedHandlers{cm: cmap.New[cmap.ConcurrentMap[string, Handler]]()}
 }
 
 func (nest *nestedHandlers) len() (total int) {
-	for hs := range nest.cm.IterBuffered() {
-		hndlrs := hs.Val.(cmap.ConcurrentMap)
-		total += len(hndlrs.Keys())
+	for hndlrs := range nest.cm.IterBuffered() {
+		total += len(hndlrs.Val.Keys())
 	}
 	return
 }
 
 func (nest *nestedHandlers) lenFor(cmd string) (total int) {
 	cmd = strings.ToUpper(cmd)
-	hs, ok := nest.cm.Get(cmd)
+	hndlrs, ok := nest.cm.Get(cmd)
 	if !ok {
 		return 0
 	}
-	hndlrs := hs.(cmap.ConcurrentMap)
 	return hndlrs.Count()
 }
 
 func (nest *nestedHandlers) getAllHandlersFor(s string) (handlers chan handlerTuple, ok bool) {
-	var h interface{}
+	var h cmap.ConcurrentMap[string, Handler]
 	h, ok = nest.cm.Get(s)
 	if !ok {
 		return
 	}
-	hm := h.(cmap.ConcurrentMap)
 	handlers = make(chan handlerTuple)
 	go func() {
-		for hi := range hm.IterBuffered() {
+		for hi := range h.IterBuffered() {
 			ht := handlerTuple{
 				hi.Key,
-				hi.Val.(Handler),
+				hi.Val,
 			}
 			handlers <- ht
 		}
@@ -221,9 +218,8 @@ func (c *Caller) exec(command string, bg bool, client *Client, event *Event) {
 	var stack []execStack
 
 	// Get internal handlers first.
-	ihm, iok := c.internal.cm.Get(command)
+	hmap, iok := c.internal.cm.Get(command)
 	if iok {
-		hmap := ihm.(cmap.ConcurrentMap)
 		for assigned := range hmap.IterBuffered() {
 			cuid := assigned.Key
 			if (strings.HasSuffix(cuid, ":bg") && !bg) || (!strings.HasSuffix(cuid, ":bg") && bg) {
@@ -238,18 +234,13 @@ func (c *Caller) exec(command string, bg bool, client *Client, event *Event) {
 		}
 	}
 	// Then external handlers.
-	ehm, eok := c.external.cm.Get(command)
+	hmap, eok := c.external.cm.Get(command)
 	if eok {
-		hmap := ehm.(cmap.ConcurrentMap)
 		for _, cuid := range hmap.Keys() {
 			if (strings.HasSuffix(cuid, ":bg") && !bg) || (!strings.HasSuffix(cuid, ":bg") && bg) {
 				continue
 			}
-			hi, _ := hmap.Get(cuid)
-			hndlr, ok := hi.(Handler)
-			if !ok {
-				panic("improper handler type in map")
-			}
+			hndlr, _ := hmap.Get(cuid)
 			stack = append(stack, execStack{hndlr, cuid})
 		}
 	}
@@ -337,13 +328,11 @@ func (c *Caller) remove(cuid string) (ok bool) {
 	}
 
 	// Check if the irc command/event has any handlers on it.
-	var h interface{}
-	h, ok = c.external.cm.Get(cmd)
+	var hs cmap.ConcurrentMap[string, Handler]
+	hs, ok = c.external.cm.Get(cmd)
 	if !ok {
 		return
 	}
-
-	hs := h.(cmap.ConcurrentMap)
 
 	// Check to see if it's actually a registered handler.
 	if _, ok = hs.Get(cuid); !ok {
@@ -381,8 +370,7 @@ func (c *Caller) register(internal, bg bool, cmd string, handler Handler) (cuid 
 
 	var (
 		parent    *nestedHandlers
-		chandlers cmap.ConcurrentMap
-		ei        interface{}
+		chandlers cmap.ConcurrentMap[string, Handler]
 		ok        bool
 	)
 
@@ -392,12 +380,10 @@ func (c *Caller) register(internal, bg bool, cmd string, handler Handler) (cuid 
 		parent = c.external
 	}
 
-	ei, ok = parent.cm.Get(cmd)
+	chandlers, ok = parent.cm.Get(cmd)
 
-	if ok {
-		chandlers = ei.(cmap.ConcurrentMap)
-	} else {
-		chandlers = cmap.New()
+	if !ok {
+		chandlers = cmap.New[Handler]()
 	}
 
 	chandlers.Set(uid, handler)

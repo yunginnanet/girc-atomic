@@ -509,15 +509,13 @@ func (c *Client) sendLoop(ctx context.Context, errs chan error, working *int32) 
 			// Check if tags exist on the event. If they do, and message-tags
 			// isn't a supported capability, remove them from the event.
 			if event.Tags != nil {
-				c.state.RLock()
 				var in bool
-				for i := 0; i < len(c.state.enabledCap); i++ {
-					if _, ok := c.state.enabledCap["message-tags"]; ok {
+				for i := 0; i < c.state.enabledCap.Count(); i++ {
+					if _, ok := c.state.enabledCap.Get("message-tags"); ok {
 						in = true
 						break
 					}
 				}
-				c.state.RUnlock()
 
 				if !in {
 					event.Tags = Tags{}

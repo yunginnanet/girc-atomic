@@ -162,13 +162,13 @@ func TestSet(t *testing.T) {
 	ctcp := newCTCP()
 
 	ctcp.Set("TEST-1", func(client *Client, event CTCPEvent) {})
-	if _, ok := ctcp.handlers["TEST"]; ok {
+	if _, ok := ctcp.handlers.Get("TEST"); ok {
 		t.Fatal("Set('TEST') allowed invalid command")
 	}
 
 	ctcp.Set("TEST", func(client *Client, event CTCPEvent) {})
 	// Make sure it's there.
-	if _, ok := ctcp.handlers["TEST"]; !ok {
+	if _, ok := ctcp.handlers.Get("TEST"); !ok {
 		t.Fatal("store: Set('TEST') didn't set")
 	}
 }
@@ -179,7 +179,7 @@ func TestClear(t *testing.T) {
 	ctcp.Set("TEST", func(client *Client, event CTCPEvent) {})
 	ctcp.Clear("TEST")
 
-	if _, ok := ctcp.handlers["TEST"]; ok {
+	if _, ok := ctcp.handlers.Get("TEST"); ok {
 		t.Fatal("ctcp.Clear('TEST') didn't remove handler")
 	}
 }
@@ -191,8 +191,8 @@ func TestClearAll(t *testing.T) {
 	ctcp.Set("TEST2", func(client *Client, event CTCPEvent) {})
 	ctcp.ClearAll()
 
-	_, first := ctcp.handlers["TEST1"]
-	_, second := ctcp.handlers["TEST2"]
+	_, first := ctcp.handlers.Get("TEST1")
+	_, second := ctcp.handlers.Get("TEST2")
 
 	if first || second {
 		t.Fatalf("ctcp.ClearAll() didn't remove all handlers: 1: %v 2: %v", first, second)

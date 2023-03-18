@@ -18,9 +18,6 @@ import (
 func (c *Client) registerBuiltins() {
 	c.debug.Print("registering built-in handlers")
 
-	c.Handlers.mu.Lock()
-	defer c.Handlers.mu.Unlock()
-
 	// Built-in things that should always be supported.
 	c.Handlers.register(true, true, RPL_WELCOME, HandlerFunc(handleConnect))
 	c.Handlers.register(true, false, PING, HandlerFunc(handlePING))
@@ -219,9 +216,6 @@ func handlePART(c *Client, e Event) {
 		return
 	}
 
-	c.state.Lock()
-	defer c.state.Unlock()
-
 	c.debug.Println("handlePart")
 	defer c.debug.Println("handlePart done for " + e.Params[0])
 
@@ -238,9 +232,7 @@ func handlePART(c *Client, e Event) {
 
 	if chn := c.LookupChannel(channel); chn != nil {
 		chn.UserList.Remove(e.Source.ID())
-		c.state.Unlock()
 		c.debug.Println(fmt.Sprintf("removed: %s, new count: %d", e.Source.ID(), chn.Len()))
-		c.state.Lock()
 	} else {
 		c.debug.Println("failed to lookup channel: " + channel)
 	}
@@ -251,7 +243,6 @@ func handlePART(c *Client, e Event) {
 	}
 
 	c.state.deleteUser(channel, e.Source.ID())
-
 }
 
 // handleCREATIONTIME handles incoming TOPIC events and keeps channel tracking info
