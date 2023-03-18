@@ -92,11 +92,11 @@ func (s *state) reset(initial bool) {
 // User represents an IRC user and the state attached to them.
 type User struct {
 	// Nick is the users current nickname. rfc1459 compliant.
-	Nick string `json:"nick"`
+	Nick *MarshalableAtomicValue `json:"nick"`
 	// Ident is the users username/ident. Ident is commonly prefixed with a
 	// "~", which indicates that they do not have a identd server setup for
 	// authentication.
-	Ident string `json:"ident"`
+	Ident *MarshalableAtomicValue `json:"ident"`
 	// Host is the visible host of the users connection that the server has
 	// provided to us for their connection. May not always be accurate due to
 	// many networks spoofing/hiding parts of the hostname for privacy
@@ -104,7 +104,7 @@ type User struct {
 	Host string `json:"host"`
 
 	// Mask is the combined Nick!Ident@Host of the given user.
-	Mask string `json:"mask"`
+	Mask *MarshalableAtomicValue `json:"mask"`
 
 	// Network is the name of the IRC network where this user was found.
 	// This has been added for the purposes of girc being used in multi-client scenarios with data persistence.
@@ -366,7 +366,7 @@ func (ch *Channel) Copy() *Channel {
 	*nc = *ch
 
 	for v := range ch.UserList.IterBuffered() {
-		nc.UserList.Set(v.Val.Nick, v.Val)
+		nc.UserList.Set(v.Val.Nick.Load().(string), v.Val)
 	}
 
 	// And modes.
@@ -466,10 +466,10 @@ func (s *state) createUser(src *Source) (u *User, ok bool) {
 	mask.MustWriteString(src.Host)
 
 	u = &User{
-		Nick:        src.Name,
+		Nick:        NewAtomicString(src.Name),
 		Host:        src.Host,
-		Ident:       src.Ident,
-		Mask:        mask.String(),
+		Ident:       NewAtomicString(src.Ident),
+		Mask:        NewAtomicString(mask.String()),
 		ChannelList: cmap.New[*Channel](),
 		FirstSeen:   time.Now(),
 		LastActive:  time.Now(),
@@ -532,7 +532,7 @@ func (s *state) renameUser(from, to string) {
 		user = old
 	}
 
-	user.Nick = to
+	user.Nick.Store(to)
 	user.LastActive = time.Now()
 	s.users.Set(ToRFC1459(to), user)
 

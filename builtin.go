@@ -177,7 +177,7 @@ func handleJOIN(c *Client, e Event) {
 
 	defer c.state.notify(c, UPDATE_STATE)
 
-	channel.addUser(user.Nick, user)
+	channel.addUser(user.Nick.Load().(string), user)
 	user.addChannel(channel.Name, channel)
 
 	// Assume extended-join (ircv3).
@@ -345,8 +345,17 @@ func handleWHO(c *Client, e Event) {
 	}
 
 	user.Host = host
-	user.Ident = ident
-	user.Mask = user.Nick + "!" + user.Ident + "@" + user.Host
+	user.Ident.Store(ident)
+
+	str := strs.Get()
+	str.MustWriteString(user.Nick.Load().(string))
+	str.MustWriteString("!")
+	str.MustWriteString(user.Ident.Load().(string))
+	str.MustWriteString("@")
+	str.MustWriteString(user.Host)
+	user.Mask.Store(str.String())
+	strs.MustPut(str)
+
 	user.Extras.Name = realname
 
 	if account != "0" {

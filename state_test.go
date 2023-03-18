@@ -123,7 +123,7 @@ func TestState(t *testing.T) {
 
 		fullUsers := c.Users()
 		for i := 0; i < len(fullUsers); i++ {
-			if fullUsers[i].Nick != users[i] {
+			if fullUsers[i].Nick.Load().(string) != users[i] {
 				t.Errorf("fullUsers nick doesn't map to same nick in UsersList: %q :: %#v", fullUsers[i].Nick, users)
 				return
 			}
@@ -138,12 +138,12 @@ func TestState(t *testing.T) {
 		adm := ch.Admins(c)
 		var admList []string
 		for i := 0; i < len(adm); i++ {
-			admList = append(admList, adm[i].Nick)
+			admList = append(admList, adm[i].Nick.Load().(string))
 		}
 		trusted := ch.Trusted(c)
 		var trustedList []string
 		for i := 0; i < len(trusted); i++ {
-			trustedList = append(trustedList, trusted[i].Nick)
+			trustedList = append(trustedList, trusted[i].Nick.Load().(string))
 		}
 
 		if !reflect.DeepEqual(admList, []string{"nick2"}) {
@@ -213,7 +213,7 @@ func TestState(t *testing.T) {
 			return
 		}
 
-		if user.Nick != "fhjones" {
+		if user.Nick.Load().(string) != "fhjones" {
 			t.Errorf("User.Nick == %q, wanted \"nick\"", user.Nick)
 			return
 		}
@@ -228,7 +228,7 @@ func TestState(t *testing.T) {
 			return
 		}
 
-		if user.Ident != "~user" {
+		if user.Ident.Load().(string) != "~user" {
 			t.Errorf("User.Ident == %q, wanted \"~user\"", user.Ident)
 			return
 		}

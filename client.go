@@ -646,7 +646,7 @@ func (c *Client) UserList() []string {
 		if usr.Stale {
 			continue
 		}
-		users = append(users, usr.Nick)
+		users = append(users, usr.Nick.Load().(string))
 	}
 
 	sort.Strings(users)
@@ -665,7 +665,7 @@ func (c *Client) Users() []*User {
 	}
 
 	sort.Slice(users, func(i, j int) bool {
-		return users[i].Nick < users[j].Nick
+		return users[i].Nick.Load().(string) < users[j].Nick.Load().(string)
 	})
 	return users
 }

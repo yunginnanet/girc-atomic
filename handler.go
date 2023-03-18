@@ -225,11 +225,7 @@ func (c *Caller) exec(command string, bg bool, client *Client, event *Event) {
 			if (strings.HasSuffix(cuid, ":bg") && !bg) || (!strings.HasSuffix(cuid, ":bg") && bg) {
 				continue
 			}
-			hi, _ := hmap.Get(cuid)
-			hndlr, ok := hi.(Handler)
-			if !ok {
-				panic("improper handler type in map")
-			}
+			hndlr, _ := hmap.Get(cuid)
 			stack = append(stack, execStack{hndlr, cuid})
 		}
 	}

@@ -307,7 +307,7 @@ func handleCHGHOST(c *Client, e Event) {
 
 	user := c.state.lookupUser(e.Source.Name)
 	if user != nil {
-		user.Ident = e.Params[0]
+		user.Ident.Store(e.Params[0])
 		user.Host = e.Params[1]
 	}
 
